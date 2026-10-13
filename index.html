@@ -34,10 +34,20 @@
       font-weight: 600;
       padding: 4px 8px;
       border-radius: 6px;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
       text-align: center;
       width: 100%;
       box-sizing: border-box;
+    }
+    .dica-box {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e40af;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.4;
+      margin-bottom: 16px;
     }
     .section-title {
       font-weight: 700;
@@ -87,24 +97,28 @@
   <h2>Calculadora de Notas</h2>
   <div class="badge">Critério: AD (Peso 4) | AP (Peso 6)</div>
 
+  <div class="dica-box">
+    💡 <strong>Como preencher:</strong> Digite notas de <strong>0 a 10</strong>. Pode usar número inteiro ou decimal (Ex: <strong>4</strong> ou <strong>5.7</strong>).
+  </div>
+
   <div class="section-title">Primeiro Ciclo (N1)</div>
   <div class="input-group">
-    <label for="ad1">Nota da AD1 (0 a 10):</label>
-    <input type="number" id="ad1" min="0" max="10" step="0.1" value="0" oninput="validarECalcular(this)">
+    <label for="ad1">Nota da AD1:</label>
+    <input type="number" id="ad1" min="0" max="10" step="0.1" placeholder="Ex: 5.7" oninput="validarECalcular(this)">
   </div>
   <div class="input-group">
-    <label for="ap1">Nota da AP1 (0 a 10):</label>
-    <input type="number" id="ap1" min="0" max="10" step="0.1" value="0" oninput="validarECalcular(this)">
+    <label for="ap1">Nota da AP1:</label>
+    <input type="number" id="ap1" min="0" max="10" step="0.1" placeholder="Ex: 6.0" oninput="validarECalcular(this)">
   </div>
 
   <div class="section-title">Segundo Ciclo (N2)</div>
   <div class="input-group">
-    <label for="ad2">Nota da AD2 (0 a 10):</label>
-    <input type="number" id="ad2" min="0" max="10" step="0.1" value="0" oninput="validarECalcular(this)">
+    <label for="ad2">Nota da AD2:</label>
+    <input type="number" id="ad2" min="0" max="10" step="0.1" placeholder="Ex: 8.0" oninput="validarECalcular(this)">
   </div>
   <div class="input-group">
-    <label for="ap2">Nota da AP2 (0 a 10):</label>
-    <input type="number" id="ap2" min="0" max="10" step="0.1" value="0" oninput="validarECalcular(this)">
+    <label for="ap2">Nota da AP2:</label>
+    <input type="number" id="ap2" min="0" max="10" step="0.1" placeholder="Ex: 4.5" oninput="validarECalcular(this)">
   </div>
 
   <div class="result-box">
@@ -150,7 +164,6 @@ function calcular() {
     statusEl.innerHTML = "Aprovado Direto! 🎉";
     statusEl.className = "status aprovado";
   } else {
-    // Identifica o melhor e o pior ciclo
     let melhorCiclo = n1;
     let adPiorCiclo = ad2;
     let cicloSubstituido = "AP2";
