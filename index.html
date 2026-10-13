@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Calculadora CEDERJ (AD peso 4 / AP peso 6)</title>
+  <title>Calculadora CEDERJ (AD 4 / AP 6)</title>
   <style>
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -19,7 +19,7 @@
       padding: 24px;
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      max-width: 420px;
+      max-width: 440px;
       width: 100%;
     }
     h2 {
@@ -71,19 +71,21 @@
     }
     .status {
       font-weight: 700;
-      font-size: 18px;
+      font-size: 16px;
       text-align: center;
-      margin-top: 10px;
+      margin-top: 12px;
+      line-height: 1.4;
     }
     .aprovado { color: #16a34a; }
     .recuperacao { color: #ea580c; }
+    .reprovado { color: #dc2626; }
   </style>
 </head>
 <body>
 
 <div class="card">
   <h2>Calculadora de Notas</h2>
-  <div class="badge">Pesos aplicados: AD (40%) | AP (60%)</div>
+  <div class="badge">Critério: AD (Peso 4) | AP (Peso 6)</div>
 
   <div class="section-title">Primeiro Ciclo (N1)</div>
   <div class="input-group">
@@ -106,8 +108,8 @@
   </div>
 
   <div class="result-box">
-    <div><strong>N1:</strong> <span id="resN1">0.00</span></div>
-    <div><strong>N2:</strong> <span id="resN2">0.00</span></div>
+    <div><strong>Nota N1:</strong> <span id="resN1">0.00</span></div>
+    <div><strong>Nota N2:</strong> <span id="resN2">0.00</span></div>
     <div style="font-size: 16px; margin-top: 6px;"><strong>Média Parcial:</strong> <span id="resMedia">0.00</span></div>
     <div class="status" id="resStatus">-</div>
   </div>
@@ -120,7 +122,7 @@ function calcular() {
   const ad2 = parseFloat(document.getElementById('ad2').value) || 0;
   const ap2 = parseFloat(document.getElementById('ap2').value) || 0;
 
-  // Pesos ajustados: AD = 4 (0.4) e AP = 6 (0.6)
+  // Pesos: AD = 4 (0.4) e AP = 6 (0.6)
   const n1 = (ad1 * 0.4) + (ap1 * 0.6);
   const n2 = (ad2 * 0.4) + (ap2 * 0.6);
   const media = (n1 + n2) / 2;
@@ -130,15 +132,36 @@ function calcular() {
   document.getElementById('resMedia').innerText = media.toFixed(2);
 
   const statusEl = document.getElementById('resStatus');
+
   if (media >= 6.0) {
-    statusEl.innerText = "Aprovado Direto!";
+    statusEl.innerHTML = "Aprovado Direto! 🎉";
     statusEl.className = "status aprovado";
   } else {
-    // Cálculo para saber quanto precisa somar entre N_maior + AP3 >= 10
-    const maiorNota = Math.max(n1, n2);
-    const ap3Minima = Math.max(0, 10 - maiorNota);
-    statusEl.innerText = `AP3 necessária (mínimo ~${ap3Minima.toFixed(1)})`;
-    statusEl.className = "status recuperacao";
+    // Identifica o melhor e o pior ciclo
+    let melhorCiclo = n1;
+    let adPiorCiclo = ad2;
+    let cicloSubstituido = "AP2";
+
+    if (n2 > n1) {
+      melhorCiclo = n2;
+      adPiorCiclo = ad1;
+      cicloSubstituido = "AP1";
+    }
+
+    // Para a média final ser >= 5.0: (MelhorCiclo + NovoCiclo) / 2 >= 5.0 -> NovoCiclo >= 10 - MelhorCiclo
+    // Como NovoCiclo = (adPior * 0.4) + (AP3 * 0.6):
+    // AP3 = (10 - MelhorCiclo - (adPior * 0.4)) / 0.6
+    const metaNovoCiclo = 10 - melhorCiclo;
+    const ap3Necessaria = (metaNovoCiclo - (adPiorCiclo * 0.4)) / 0.6;
+
+    if (ap3Necessaria > 10.0) {
+      statusEl.innerHTML = `Média insuficiente para recuperação (Mesmo com 10 na AP3 a média não atinge 5,0).`;
+      statusEl.className = "status reprovado";
+    } else {
+      const notaFinalNecessaria = Math.max(0, ap3Necessaria);
+      statusEl.innerHTML = `Em recuperação (AP3 substitui ${cicloSubstituido})<br>Nota mínima necessária na prova da AP3: <strong>${notaFinalNecessaria.toFixed(1)}</strong>`;
+      statusEl.className = "status recuperacao";
+    }
   }
 }
 calcular();
