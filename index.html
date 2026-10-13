@@ -65,7 +65,7 @@
       font-weight: 500;
     }
     input {
-      width: 80px;
+      width: 85px;
       padding: 8px;
       border: 1px solid #cbd5e1;
       border-radius: 6px;
@@ -98,27 +98,27 @@
   <div class="badge">Critério: AD (Peso 4) | AP (Peso 6)</div>
 
   <div class="dica-box">
-    💡 <strong>Como preencher:</strong> Digite notas de <strong>0 a 10</strong>. Pode usar número inteiro ou decimal (Ex: <strong>4</strong> ou <strong>5.7</strong>).
+    💡 <strong>Dica de digitação rápida:</strong> se digitar <strong>55</strong> vira <strong>5.5</strong>, <strong>70</strong> vira <strong>7.0</strong>. Se digitar <strong>10</strong> conta como a nota máxima <strong>10</strong>!
   </div>
 
   <div class="section-title">Primeiro Ciclo (N1)</div>
   <div class="input-group">
     <label for="ad1">Nota da AD1:</label>
-    <input type="number" id="ad1" min="0" max="10" step="0.1" placeholder="Ex: 5.7" oninput="validarECalcular(this)">
+    <input type="text" id="ad1" inputmode="decimal" placeholder="0.0" oninput="formatarNota(this)">
   </div>
   <div class="input-group">
     <label for="ap1">Nota da AP1:</label>
-    <input type="number" id="ap1" min="0" max="10" step="0.1" placeholder="Ex: 6.0" oninput="validarECalcular(this)">
+    <input type="text" id="ap1" inputmode="decimal" placeholder="0.0" oninput="formatarNota(this)">
   </div>
 
   <div class="section-title">Segundo Ciclo (N2)</div>
   <div class="input-group">
     <label for="ad2">Nota da AD2:</label>
-    <input type="number" id="ad2" min="0" max="10" step="0.1" placeholder="Ex: 8.0" oninput="validarECalcular(this)">
+    <input type="text" id="ad2" inputmode="decimal" placeholder="0.0" oninput="formatarNota(this)">
   </div>
   <div class="input-group">
     <label for="ap2">Nota da AP2:</label>
-    <input type="number" id="ap2" min="0" max="10" step="0.1" placeholder="Ex: 4.5" oninput="validarECalcular(this)">
+    <input type="text" id="ap2" inputmode="decimal" placeholder="0.0" oninput="formatarNota(this)">
   </div>
 
   <div class="result-box">
@@ -130,24 +130,45 @@
 </div>
 
 <script>
-function validarECalcular(input) {
-  let val = parseFloat(input.value);
+function formatarNota(input) {
+  let val = input.value.replace(',', '.').trim();
 
-  // Limita estritamente entre 0 e 10
-  if (val > 10) {
-    input.value = 10;
-  } else if (val < 0) {
-    input.value = 0;
+  // Se digitar apenas números inteiros sem ponto/vírgula
+  if (/^\d+$/.test(val)) {
+    if (val === "10") {
+      // 10 permanece 10
+      input.value = "10";
+    } else if (val === "100") {
+      // Se digitar 100, ajusta para 10
+      input.value = "10";
+    } else if (val.length === 2) {
+      // Qualquer outro número de 2 dígitos vira decimal (ex: 55 -> 5.5, 40 -> 4.0)
+      let num = parseInt(val, 10);
+      let formatado = (num / 10).toFixed(1);
+      input.value = formatado;
+    }
+  }
+
+  // Limite máximo de 10
+  let numVal = parseFloat(input.value);
+  if (numVal > 10) {
+    input.value = "10";
   }
 
   calcular();
 }
 
+function obterNota(id) {
+  let val = document.getElementById(id).value.replace(',', '.');
+  let num = parseFloat(val);
+  return isNaN(num) ? 0 : Math.min(10, Math.max(0, num));
+}
+
 function calcular() {
-  const ad1 = parseFloat(document.getElementById('ad1').value) || 0;
-  const ap1 = parseFloat(document.getElementById('ap1').value) || 0;
-  const ad2 = parseFloat(document.getElementById('ad2').value) || 0;
-  const ap2 = parseFloat(document.getElementById('ap2').value) || 0;
+  const ad1 = obterNota('ad1');
+  const ap1 = obterNota('ap1');
+  const ad2 = obterNota('ad2');
+  const ap2 = obterNota('ap2');
 
   // Pesos: AD = 4 (0.4) e AP = 6 (0.6)
   const n1 = (ad1 * 0.4) + (ap1 * 0.6);
