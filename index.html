@@ -158,4 +158,108 @@
 function formatarNota(input) {
   let val = input.value.replace(',', '.').trim();
 
-  if
+  if (/^\d+$/.test(val)) {
+    if (val === "10" || val === "100") {
+      input.value = "10";
+    } else if (val.length === 2) {
+      let num = parseInt(val, 10);
+      input.value = (num / 10).toFixed(1);
+    }
+  }
+
+  let numVal = parseFloat(input.value);
+  if (numVal > 10) {
+    input.value = "10";
+  }
+
+  calcular();
+}
+
+function obterValor(id) {
+  let el = document.getElementById(id);
+  let val = el.value.replace(',', '.').trim();
+  if (val === '') return null;
+  let num = parseFloat(val);
+  return isNaN(num) ? null : Math.min(10, Math.max(0, num));
+}
+
+function calcular() {
+  const ad1 = obterValor('ad1') ?? 0;
+  const ap1 = obterValor('ap1') ?? 0;
+  const ad2 = obterValor('ad2') ?? 0;
+  const ap2 = obterValor('ap2'); // Pode ser null se não fez ainda
+
+  // N1 calculada
+  const n1 = (ad1 * 0.4) + (ap1 * 0.6);
+  document.getElementById('resN1').innerText = n1.toFixed(2);
+
+  const txtAP2 = document.getElementById('txtAP2');
+  const txtAP3 = document.getElementById('txtAP3');
+
+  // 1. CÁLCULO DA META DA AP2 (Para fechar Média >= 6.0)
+  // (N1 + N2) / 2 >= 6.0  =>  N2 >= 12.0 - N1
+  // Como N2 = (ad2 * 0.4) + (ap2 * 0.6)  =>  AP2 = (12 - N1 - (ad2 * 0.4)) / 0.6
+  const metaN2Direta = 12.0 - n1;
+  const ap2Necessaria = (metaN2Direta - (ad2 * 0.4)) / 0.6;
+
+  if (ap2 === null) {
+    document.getElementById('resN2').innerText = "(Aguardando AP2)";
+    document.getElementById('resMedia').innerText = "(Incompleta)";
+
+    if (ap2Necessaria <= 0) {
+      txtAP2.innerHTML = "Você já garantiu média 6,0! Nem precisa de nota na AP2 para passar direto. 🎉";
+    } else if (ap2Necessaria <= 10.0) {
+      txtAP2.innerHTML = `Para passar <strong>direto sem AP3</strong>, você precisa tirar no mínimo <strong>${ap2Necessaria.toFixed(1)}</strong> na AP2.`;
+    } else {
+      txtAP2.innerHTML = `Mesmo com 10,0 na AP2 sua média fica abaixo de 6,0. Você precisará fazer a AP3.`;
+    }
+  } else {
+    // AP2 já foi preenchida
+    const n2 = (ad2 * 0.4) + (ap2 * 0.6);
+    const media = (n1 + n2) / 2;
+    document.getElementById('resN2').innerText = n2.toFixed(2);
+    document.getElementById('resMedia').innerText = media.toFixed(2);
+
+    if (media >= 6.0) {
+      txtAP2.innerHTML = `Parabéns! Média <strong>${media.toFixed(2)}</strong>. Você está <strong>Aprovado Direto! 🎉</strong>`;
+    } else {
+      txtAP2.innerHTML = `Média parcial de <strong>${media.toFixed(2)}</strong> (abaixo de 6,0). Será necessário realizar a AP3.`;
+    }
+  }
+
+  // 2. CÁLCULO DO CENÁRIO DA AP3 (Média Final >= 5.0)
+  // AP3 substitui a menor AP (AP1 ou AP2)
+  let notaAP2Simulada = (ap2 === null) ? 0 : ap2;
+  let n2Simulada = (ad2 * 0.4) + (notaAP2Simulada * 0.6);
+
+  let melhorCiclo = n1;
+  let adPiorCiclo = ad2;
+  let cicloSubstituido = "AP2";
+
+  if (n2Simulada > n1) {
+    melhorCiclo = n2Simulada;
+    adPiorCiclo = ad1;
+    cicloSubstituido = "AP1";
+  }
+
+  // Para média final >= 5.0: (MelhorCiclo + NovoCiclo) / 2 >= 5.0 => NovoCiclo >= 10 - MelhorCiclo
+  // AP3 = (10 - MelhorCiclo - (adPior * 0.4)) / 0.6
+  const ap3Necessaria = (10.0 - melhorCiclo - (adPiorCiclo * 0.4)) / 0.6;
+
+  if (ap2 !== null && ((n1 + n2Simulada) / 2) >= 6.0) {
+    txtAP3.innerHTML = "Não é necessária AP3 (aprovado direto).";
+  } else {
+    if (ap3Necessaria > 10.0) {
+      txtAP3.innerHTML = "Mesmo tirando 10,0 na AP3 não atinge a média mínima de 5,0.";
+    } else {
+      let notaMin = Math.max(0, ap3Necessaria);
+      let obs = (ap2 === null) ? " (estimativa considerando N1 como base)" : ` (substituindo a ${cicloSubstituido})`;
+      txtAP3.innerHTML = `Se for para a AP3, precisará tirar no mínimo <strong>${notaMin.toFixed(1)}</strong> na prova para ser aprovado (média 5,0)${obs}.`;
+    }
+  }
+}
+calcular();
+</script>
+
+</body>
+</html>
