@@ -39,7 +39,6 @@
       width: 100%;
       box-sizing: border-box;
     }
-    /* Caixa de configuração de pesos */
     .config-box {
       background: #f8fafc;
       border: 1px dashed #cbd5e1;
@@ -68,7 +67,6 @@
       width: 50px !important;
       padding: 4px 6px !important;
     }
-
     .dica-box {
       background: #eff6ff;
       border: 1px solid #bfdbfe;
@@ -292,19 +290,17 @@ function calcular() {
   const ehPendente = document.getElementById('pendenteAP2').checked;
   const ap2 = ehPendente ? null : obterNota('ap2');
 
-  // Coleta os pesos dinâmicos (convertendo de 0-10 para fator 0.0 a 1.0)
   const pesoAD = (parseFloat(document.getElementById('pesoAD').value) || 4) / 10;
   const pesoAP = (parseFloat(document.getElementById('pesoAP').value) || 6) / 10;
 
-  // N1
+  // Ciclo 1 (N1)
   const n1 = (ad1 * pesoAD) + (ap1 * pesoAP);
   document.getElementById('resN1').innerText = n1.toFixed(2);
 
   const txtAP2 = document.getElementById('txtAP2');
   const txtAP3 = document.getElementById('txtAP3');
 
-  // Meta de N2 para aprovação direta: (N1 + N2) / 2 >= 6.0 => N2 >= 12.0 - N1
-  // AP2 = (12.0 - N1 - (ad2 * pesoAD)) / pesoAP
+  // 1. Meta da AP2 para Aprovação Direta (Média >= 6.0)
   const metaN2 = 12.0 - n1;
   const ap2Precisa = (metaN2 - (ad2 * pesoAD)) / (pesoAP || 1);
 
@@ -313,24 +309,24 @@ function calcular() {
     document.getElementById('resMedia').innerText = "Incompleta";
 
     if (ap2Precisa <= 0) {
-      txtAP2.innerHTML = `Já garantiu a aprovação direta (≥ 6,0)! Mesmo com 0 na AP2 passa sem AP3. 🎉`;
+      txtAP2.innerHTML = `Já garantiu aprovação direta (≥ 6,0)! Mesmo tirando 0 na AP2 passa direto. 🎉`;
     } else if (ap2Precisa <= 10.0) {
       txtAP2.innerHTML = `Para passar <strong>direto sem AP3</strong>, precisa tirar no mínimo <span class="destaque-nota">${ap2Precisa.toFixed(1)}</span> na AP2.`;
     } else {
       txtAP2.innerHTML = `Mesmo se tirar 10,0 na AP2 a média fica abaixo de 6,0. Terá de realizar a AP3.`;
     }
 
-    // Projeção AP3 se for para exame
-    const ap3Precisa = (10.0 - n1 - (ad2 * pesoAD)) / (pesoAP || 1);
+    // Na AP3, ela substitui a menor nota (N1 ou N2) e faz média simples com a maior nota
+    const ap3Precisa = 10.0 - n1;
     if (ap3Precisa > 10.0) {
-      txtAP3.innerHTML = `Se for para a AP3, mesmo tirando 10,0 não atingirá a média 5,0.`;
+      txtAP3.innerHTML = `Se for para a AP3 com N1 como maior nota, precisará de mais que 10 para média 5,0.`;
     } else {
       let notaMin = Math.max(0, ap3Precisa);
-      txtAP3.innerHTML = `Caso precise fazer a AP3, precisará de no mínimo <span class="destaque-nota">${notaMin.toFixed(1)}</span> na prova para passar com média 5,0.`;
+      txtAP3.innerHTML = `Caso vá para a AP3 considerando a nota N1 (${n1.toFixed(2)}), você precisará de no mínimo <span class="destaque-nota">${notaMin.toFixed(1)}</span> na AP3 para ser aprovado (média 5,0).`;
     }
 
   } else {
-    // AP2 informada
+    // AP2 já informada
     const n2 = (ad2 * pesoAD) + (ap2 * pesoAP);
     const media = (n1 + n2) / 2;
     document.getElementById('resN2').innerText = n2.toFixed(2);
@@ -342,22 +338,16 @@ function calcular() {
     } else {
       txtAP2.innerHTML = `Média parcial de <strong>${media.toFixed(2)}</strong> (abaixo de 6,0). É necessário realizar a AP3.`;
 
-      let melhor = n1;
-      let adPior = ad2;
-      let substituida = "AP2";
+      // Regra oficial: AP3 faz média simples com a maior nota entre N1 e N2
+      const maiorNota = Math.max(n1, n2);
+      const menorCiclo = (n1 >= n2) ? "N2" : "N1";
+      const ap3Precisa = 10.0 - maiorNota;
 
-      if (n2 > n1) {
-        melhor = n2;
-        adPior = ad1;
-        substituida = "AP1";
-      }
-
-      const ap3Precisa = (10.0 - melhor - (adPior * pesoAD)) / (pesoAP || 1);
       if (ap3Precisa > 10.0) {
-        txtAP3.innerHTML = `Infelizmente, mesmo obtendo 10,0 na AP3 a média não atinge 5,0.`;
+        txtAP3.innerHTML = `Mesmo obtendo 10,0 na AP3 a média final não atinge 5,0.`;
       } else {
         let notaMin = Math.max(0, ap3Precisa);
-        txtAP3.innerHTML = `A AP3 irá substituir a sua <strong>${substituida}</strong>.<br>Nota mínima necessária na AP3: <span class="destaque-nota">${notaMin.toFixed(1)}</span>.`;
+        txtAP3.innerHTML = `A AP3 substitui a menor nota (${menorCiclo}).<br>Nota mínima necessária na AP3 para média 5,0: <span class="destaque-nota">${notaMin.toFixed(1)}</span>.`;
       }
     }
   }
