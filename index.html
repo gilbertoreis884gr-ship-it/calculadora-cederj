@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Calculadora CEDERJ (AD 4 / AP 6)</title>
+  <title>Calculadora CEDERJ</title>
   <style>
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -39,6 +39,36 @@
       width: 100%;
       box-sizing: border-box;
     }
+    /* Caixa de configuração de pesos */
+    .config-box {
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      padding: 10px 14px;
+      border-radius: 8px;
+      margin-bottom: 14px;
+    }
+    .config-box summary {
+      font-size: 13px;
+      font-weight: 600;
+      color: #475569;
+      cursor: pointer;
+    }
+    .pesos-grid {
+      display: flex;
+      gap: 16px;
+      margin-top: 10px;
+    }
+    .peso-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+    }
+    .peso-item input {
+      width: 50px !important;
+      padding: 4px 6px !important;
+    }
+
     .dica-box {
       background: #eff6ff;
       border: 1px solid #bfdbfe;
@@ -79,7 +109,7 @@
       font-weight: 500;
       font-size: 14px;
     }
-    input[type="text"] {
+    input[type="text"], input[type="number"] {
       width: 85px;
       padding: 8px;
       border: 1px solid #cbd5e1;
@@ -87,7 +117,7 @@
       text-align: right;
       font-size: 15px;
     }
-    input[type="text"]:disabled {
+    input:disabled {
       background: #f1f5f9;
       color: #94a3b8;
       cursor: not-allowed;
@@ -127,7 +157,22 @@
 
 <div class="card">
   <h2>Calculadora de Notas</h2>
-  <div class="badge">Critério: AD (Peso 4) | AP (Peso 6)</div>
+  <div class="badge" id="lblPesosBadge">Critério Padrão: AD (Peso 4) | AP (Peso 6)</div>
+
+  <!-- Opção para alterar os pesos -->
+  <details class="config-box">
+    <summary>⚙️ Personalizar pesos das notas (Opcional)</summary>
+    <div class="pesos-grid">
+      <div class="peso-item">
+        <label for="pesoAD">Peso AD:</label>
+        <input type="number" id="pesoAD" min="0" max="10" step="1" value="4" oninput="ajustarPesos('ad')">
+      </div>
+      <div class="peso-item">
+        <label for="pesoAP">Peso AP:</label>
+        <input type="number" id="pesoAP" min="0" max="10" step="1" value="6" oninput="ajustarPesos('ap')">
+      </div>
+    </div>
+  </details>
 
   <div class="dica-box">
     💡 <strong>Digitação rápida:</strong> Se digitar <strong>55</strong> vira <strong>5.5</strong>. Se digitar <strong>10</strong> conta como nota <strong>10</strong>.
@@ -151,7 +196,7 @@
 
   <div class="checkbox-group">
     <input type="checkbox" id="pendenteAP2" checked onchange="alternarPendenteAP2()">
-    <label for="pendenteAP2" style="cursor: pointer;">Ainda não fiz a AP2 (quero saber quanto preciso tirar)</label>
+    <label for="pendenteAP2" style="cursor: pointer;">Ainda não fiz a AP2 (calcular meta)</label>
   </div>
 
   <div class="input-group">
@@ -180,6 +225,24 @@
 </div>
 
 <script>
+function ajustarPesos(origem) {
+  let pAD = parseFloat(document.getElementById('pesoAD').value) || 0;
+  let pAP = parseFloat(document.getElementById('pesoAP').value) || 0;
+
+  if (origem === 'ad') {
+    pAD = Math.min(10, Math.max(0, pAD));
+    pAP = 10 - pAD;
+    document.getElementById('pesoAP').value = pAP;
+  } else {
+    pAP = Math.min(10, Math.max(0, pAP));
+    pAD = 10 - pAP;
+    document.getElementById('pesoAD').value = pAD;
+  }
+
+  document.getElementById('lblPesosBadge').innerText = `Critério: AD (Peso ${pAD}) | AP (Peso ${pAP})`;
+  calcular();
+}
+
 function formatarNota(input) {
   let val = input.value.replace(',', '.').trim();
 
@@ -229,56 +292,56 @@ function calcular() {
   const ehPendente = document.getElementById('pendenteAP2').checked;
   const ap2 = ehPendente ? null : obterNota('ap2');
 
+  // Coleta os pesos dinâmicos (convertendo de 0-10 para fator 0.0 a 1.0)
+  const pesoAD = (parseFloat(document.getElementById('pesoAD').value) || 4) / 10;
+  const pesoAP = (parseFloat(document.getElementById('pesoAP').value) || 6) / 10;
+
   // N1
-  const n1 = (ad1 * 0.4) + (ap1 * 0.6);
+  const n1 = (ad1 * pesoAD) + (ap1 * pesoAP);
   document.getElementById('resN1').innerText = n1.toFixed(2);
 
   const txtAP2 = document.getElementById('txtAP2');
   const txtAP3 = document.getElementById('txtAP3');
 
-  // 1. CÁLCULO DA NOTA NECESSÁRIA NA AP2 (Para média direta >= 6.0)
-  // (N1 + N2) / 2 >= 6.0  =>  N2 >= 12.0 - N1
-  // AP2 = (12 - N1 - (ad2 * 0.4)) / 0.6
+  // Meta de N2 para aprovação direta: (N1 + N2) / 2 >= 6.0 => N2 >= 12.0 - N1
+  // AP2 = (12.0 - N1 - (ad2 * pesoAD)) / pesoAP
   const metaN2 = 12.0 - n1;
-  const ap2Precisa = (metaN2 - (ad2 * 0.4)) / 0.6;
+  const ap2Precisa = (metaN2 - (ad2 * pesoAD)) / (pesoAP || 1);
 
   if (ehPendente) {
     document.getElementById('resN2').innerText = "Aguardando AP2";
     document.getElementById('resMedia').innerText = "Incompleta";
 
     if (ap2Precisa <= 0) {
-      txtAP2.innerHTML = `Você já atingiu a pontuação! Mesmo tirando 0 na AP2, sua média já garante aprovação direta (≥ 6,0). 🎉`;
+      txtAP2.innerHTML = `Já garantiu a aprovação direta (≥ 6,0)! Mesmo com 0 na AP2 passa sem AP3. 🎉`;
     } else if (ap2Precisa <= 10.0) {
-      txtAP2.innerHTML = `Para passar <strong>direto sem precisar de AP3</strong>, você precisa tirar no mínimo <span class="destaque-nota">${ap2Precisa.toFixed(1)}</span> na prova da AP2.`;
+      txtAP2.innerHTML = `Para passar <strong>direto sem AP3</strong>, precisa tirar no mínimo <span class="destaque-nota">${ap2Precisa.toFixed(1)}</span> na AP2.`;
     } else {
-      txtAP2.innerHTML = `Mesmo se tirar 10,0 na AP2 a sua média ficará abaixo de 6,0. Você obrigatoriamente fará a AP3.`;
+      txtAP2.innerHTML = `Mesmo se tirar 10,0 na AP2 a média fica abaixo de 6,0. Terá de realizar a AP3.`;
     }
 
-    // Cenário da AP3 se ainda não fez a AP2
-    // Se não passar direto na AP2, a AP3 substitui a pior prova
-    // Como N1 é conhecida: para ter média 5.0 final, necessita de 10 - N1 na nova nota
-    const ap3Precisa = (10.0 - n1 - (ad2 * 0.4)) / 0.6;
+    // Projeção AP3 se for para exame
+    const ap3Precisa = (10.0 - n1 - (ad2 * pesoAD)) / (pesoAP || 1);
     if (ap3Precisa > 10.0) {
-      txtAP3.innerHTML = `Se for para a AP3, mesmo tirando 10,0 não alcançará média 5,0.`;
+      txtAP3.innerHTML = `Se for para a AP3, mesmo tirando 10,0 não atingirá a média 5,0.`;
     } else {
       let notaMin = Math.max(0, ap3Precisa);
-      txtAP3.innerHTML = `Caso precise fazer a AP3, você precisará de no mínimo <span class="destaque-nota">${notaMin.toFixed(1)}</span> na prova final para ser aprovado (média 5,0).`;
+      txtAP3.innerHTML = `Caso precise fazer a AP3, precisará de no mínimo <span class="destaque-nota">${notaMin.toFixed(1)}</span> na prova para passar com média 5,0.`;
     }
 
   } else {
-    // AP2 já realizada
-    const n2 = (ad2 * 0.4) + (ap2 * 0.6);
+    // AP2 informada
+    const n2 = (ad2 * pesoAD) + (ap2 * pesoAP);
     const media = (n1 + n2) / 2;
     document.getElementById('resN2').innerText = n2.toFixed(2);
     document.getElementById('resMedia').innerText = media.toFixed(2);
 
     if (media >= 6.0) {
-      txtAP2.innerHTML = `Parabéns! Média final <strong>${media.toFixed(2)}</strong>. Você está <strong>Aprovado Direto! 🎉</strong>`;
-      txtAP3.innerHTML = `Não precisa de AP3.`;
+      txtAP2.innerHTML = `Parabéns! Média final <strong>${media.toFixed(2)}</strong>. Está <strong>Aprovado Direto! 🎉</strong>`;
+      txtAP3.innerHTML = `Não necessita de AP3.`;
     } else {
-      txtAP2.innerHTML = `Média parcial de <strong>${media.toFixed(2)}</strong> (abaixo de 6,0). É necessário fazer a AP3.`;
+      txtAP2.innerHTML = `Média parcial de <strong>${media.toFixed(2)}</strong> (abaixo de 6,0). É necessário realizar a AP3.`;
 
-      // Cálculo exato de AP3 substituindo o pior ciclo
       let melhor = n1;
       let adPior = ad2;
       let substituida = "AP2";
@@ -289,12 +352,12 @@ function calcular() {
         substituida = "AP1";
       }
 
-      const ap3Precisa = (10.0 - melhor - (adPior * 0.4)) / 0.6;
+      const ap3Precisa = (10.0 - melhor - (adPior * pesoAD)) / (pesoAP || 1);
       if (ap3Precisa > 10.0) {
-        txtAP3.innerHTML = `Infelizmente, mesmo com 10,0 na AP3 a média não atinge 5,0.`;
+        txtAP3.innerHTML = `Infelizmente, mesmo obtendo 10,0 na AP3 a média não atinge 5,0.`;
       } else {
         let notaMin = Math.max(0, ap3Precisa);
-        txtAP3.innerHTML = `A AP3 vai substituir a sua <strong>${substituida}</strong>.<br>Nota mínima necessária na prova da AP3: <span class="destaque-nota">${notaMin.toFixed(1)}</span>.`;
+        txtAP3.innerHTML = `A AP3 irá substituir a sua <strong>${substituida}</strong>.<br>Nota mínima necessária na AP3: <span class="destaque-nota">${notaMin.toFixed(1)}</span>.`;
       }
     }
   }
