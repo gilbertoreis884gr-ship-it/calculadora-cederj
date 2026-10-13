@@ -19,7 +19,7 @@
       padding: 24px;
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      max-width: 450px;
+      max-width: 460px;
       width: 100%;
     }
     h2 {
@@ -61,17 +61,36 @@
       align-items: center;
       margin-bottom: 10px;
     }
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 8px 0 12px 0;
+      font-size: 14px;
+      color: #0369a1;
+      font-weight: 600;
+    }
+    .checkbox-group input {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
     label {
       font-weight: 500;
       font-size: 14px;
     }
-    input {
+    input[type="text"] {
       width: 85px;
       padding: 8px;
       border: 1px solid #cbd5e1;
       border-radius: 6px;
       text-align: right;
       font-size: 15px;
+    }
+    input[type="text"]:disabled {
+      background: #f1f5f9;
+      color: #94a3b8;
+      cursor: not-allowed;
     }
     .result-box {
       margin-top: 18px;
@@ -81,7 +100,6 @@
       border: 1px solid #cbd5e1;
       font-size: 15px;
     }
-    /* Estilo das caixas informativas */
     .info-card {
       margin-top: 14px;
       padding: 12px 14px;
@@ -99,8 +117,9 @@
       border: 1.5px solid #fdba74;
       color: #9a3412;
     }
-    .info-card strong {
-      font-size: 15px;
+    .destaque-nota {
+      font-size: 18px;
+      font-weight: 800;
     }
   </style>
 </head>
@@ -111,7 +130,7 @@
   <div class="badge">Critério: AD (Peso 4) | AP (Peso 6)</div>
 
   <div class="dica-box">
-    💡 <strong>Digitação rápida:</strong> Se digitar <strong>55</strong> vira <strong>5.5</strong>. Se digitar <strong>10</strong> conta como a nota máxima <strong>10</strong>.
+    💡 <strong>Digitação rápida:</strong> Se digitar <strong>55</strong> vira <strong>5.5</strong>. Se digitar <strong>10</strong> conta como nota <strong>10</strong>.
   </div>
 
   <div class="section-title">Primeiro Ciclo (N1)</div>
@@ -129,28 +148,34 @@
     <label for="ad2">Nota da AD2:</label>
     <input type="text" id="ad2" inputmode="decimal" placeholder="0.0" oninput="formatarNota(this)">
   </div>
+
+  <div class="checkbox-group">
+    <input type="checkbox" id="pendenteAP2" checked onchange="alternarPendenteAP2()">
+    <label for="pendenteAP2" style="cursor: pointer;">Ainda não fiz a AP2 (quero saber quanto preciso tirar)</label>
+  </div>
+
   <div class="input-group">
-    <label for="ap2">Nota da AP2 (deixe vazio se não fez):</label>
-    <input type="text" id="ap2" inputmode="decimal" placeholder="pendente" oninput="formatarNota(this)">
+    <label for="ap2">Nota da AP2:</label>
+    <input type="text" id="ap2" inputmode="decimal" placeholder="Pendente" disabled oninput="formatarNota(this)">
   </div>
 
   <!-- Resumo das notas -->
   <div class="result-box">
     <div><strong>Nota N1:</strong> <span id="resN1">0.00</span></div>
-    <div><strong>Nota N2:</strong> <span id="resN2">-</span></div>
-    <div style="margin-top: 5px;"><strong>Média Atual / Parcial:</strong> <span id="resMedia">-</span></div>
+    <div><strong>Nota N2:</strong> <span id="resN2">Aguardando AP2</span></div>
+    <div style="margin-top: 5px;"><strong>Média Atual:</strong> <span id="resMedia">-</span></div>
   </div>
 
-  <!-- Caixa 1: Quanto falta na AP2 para aprovação direta (Média >= 6.0) -->
+  <!-- Caixa 1: Meta para AP2 -->
   <div class="info-card card-ap2" id="boxAP2">
-    <strong>🎯 Meta para AP2 (Aprovação Direta):</strong><br>
-    <span id="txtAP2">Preencha as notas acima para calcular.</span>
+    <strong>🎯 Meta para a AP2 (Aprovação Direta - Média 6,0):</strong><br>
+    <span id="txtAP2">Calculando...</span>
   </div>
 
-  <!-- Caixa 2: Situação para a AP3 (Recuperação - Média final >= 5.0) -->
+  <!-- Caixa 2: Meta para AP3 -->
   <div class="info-card card-ap3" id="boxAP3">
-    <strong>📋 Cenário de AP3 (Recuperação):</strong><br>
-    <span id="txtAP3">Preencha as notas para simular a AP3.</span>
+    <strong>📋 Cenário de AP3 (Recuperação - Média 5,0):</strong><br>
+    <span id="txtAP3">Calculando...</span>
   </div>
 </div>
 
@@ -175,86 +200,102 @@ function formatarNota(input) {
   calcular();
 }
 
-function obterValor(id) {
+function alternarPendenteAP2() {
+  const chk = document.getElementById('pendenteAP2');
+  const inputAP2 = document.getElementById('ap2');
+  if (chk.checked) {
+    inputAP2.value = '';
+    inputAP2.disabled = true;
+    inputAP2.placeholder = "Pendente";
+  } else {
+    inputAP2.disabled = false;
+    inputAP2.placeholder = "0.0";
+  }
+  calcular();
+}
+
+function obterNota(id) {
   let el = document.getElementById(id);
   let val = el.value.replace(',', '.').trim();
-  if (val === '') return null;
+  if (val === '') return 0;
   let num = parseFloat(val);
-  return isNaN(num) ? null : Math.min(10, Math.max(0, num));
+  return isNaN(num) ? 0 : Math.min(10, Math.max(0, num));
 }
 
 function calcular() {
-  const ad1 = obterValor('ad1') ?? 0;
-  const ap1 = obterValor('ap1') ?? 0;
-  const ad2 = obterValor('ad2') ?? 0;
-  const ap2 = obterValor('ap2'); // Pode ser null se não fez ainda
+  const ad1 = obterNota('ad1');
+  const ap1 = obterNota('ap1');
+  const ad2 = obterNota('ad2');
+  const ehPendente = document.getElementById('pendenteAP2').checked;
+  const ap2 = ehPendente ? null : obterNota('ap2');
 
-  // N1 calculada
+  // N1
   const n1 = (ad1 * 0.4) + (ap1 * 0.6);
   document.getElementById('resN1').innerText = n1.toFixed(2);
 
   const txtAP2 = document.getElementById('txtAP2');
   const txtAP3 = document.getElementById('txtAP3');
 
-  // 1. CÁLCULO DA META DA AP2 (Para fechar Média >= 6.0)
+  // 1. CÁLCULO DA NOTA NECESSÁRIA NA AP2 (Para média direta >= 6.0)
   // (N1 + N2) / 2 >= 6.0  =>  N2 >= 12.0 - N1
-  // Como N2 = (ad2 * 0.4) + (ap2 * 0.6)  =>  AP2 = (12 - N1 - (ad2 * 0.4)) / 0.6
-  const metaN2Direta = 12.0 - n1;
-  const ap2Necessaria = (metaN2Direta - (ad2 * 0.4)) / 0.6;
+  // AP2 = (12 - N1 - (ad2 * 0.4)) / 0.6
+  const metaN2 = 12.0 - n1;
+  const ap2Precisa = (metaN2 - (ad2 * 0.4)) / 0.6;
 
-  if (ap2 === null) {
-    document.getElementById('resN2').innerText = "(Aguardando AP2)";
-    document.getElementById('resMedia').innerText = "(Incompleta)";
+  if (ehPendente) {
+    document.getElementById('resN2').innerText = "Aguardando AP2";
+    document.getElementById('resMedia').innerText = "Incompleta";
 
-    if (ap2Necessaria <= 0) {
-      txtAP2.innerHTML = "Você já garantiu média 6,0! Nem precisa de nota na AP2 para passar direto. 🎉";
-    } else if (ap2Necessaria <= 10.0) {
-      txtAP2.innerHTML = `Para passar <strong>direto sem AP3</strong>, você precisa tirar no mínimo <strong>${ap2Necessaria.toFixed(1)}</strong> na AP2.`;
+    if (ap2Precisa <= 0) {
+      txtAP2.innerHTML = `Você já atingiu a pontuação! Mesmo tirando 0 na AP2, sua média já garante aprovação direta (≥ 6,0). 🎉`;
+    } else if (ap2Precisa <= 10.0) {
+      txtAP2.innerHTML = `Para passar <strong>direto sem precisar de AP3</strong>, você precisa tirar no mínimo <span class="destaque-nota">${ap2Precisa.toFixed(1)}</span> na prova da AP2.`;
     } else {
-      txtAP2.innerHTML = `Mesmo com 10,0 na AP2 sua média fica abaixo de 6,0. Você precisará fazer a AP3.`;
+      txtAP2.innerHTML = `Mesmo se tirar 10,0 na AP2 a sua média ficará abaixo de 6,0. Você obrigatoriamente fará a AP3.`;
     }
+
+    // Cenário da AP3 se ainda não fez a AP2
+    // Se não passar direto na AP2, a AP3 substitui a pior prova
+    // Como N1 é conhecida: para ter média 5.0 final, necessita de 10 - N1 na nova nota
+    const ap3Precisa = (10.0 - n1 - (ad2 * 0.4)) / 0.6;
+    if (ap3Precisa > 10.0) {
+      txtAP3.innerHTML = `Se for para a AP3, mesmo tirando 10,0 não alcançará média 5,0.`;
+    } else {
+      let notaMin = Math.max(0, ap3Precisa);
+      txtAP3.innerHTML = `Caso precise fazer a AP3, você precisará de no mínimo <span class="destaque-nota">${notaMin.toFixed(1)}</span> na prova final para ser aprovado (média 5,0).`;
+    }
+
   } else {
-    // AP2 já foi preenchida
+    // AP2 já realizada
     const n2 = (ad2 * 0.4) + (ap2 * 0.6);
     const media = (n1 + n2) / 2;
     document.getElementById('resN2').innerText = n2.toFixed(2);
     document.getElementById('resMedia').innerText = media.toFixed(2);
 
     if (media >= 6.0) {
-      txtAP2.innerHTML = `Parabéns! Média <strong>${media.toFixed(2)}</strong>. Você está <strong>Aprovado Direto! 🎉</strong>`;
+      txtAP2.innerHTML = `Parabéns! Média final <strong>${media.toFixed(2)}</strong>. Você está <strong>Aprovado Direto! 🎉</strong>`;
+      txtAP3.innerHTML = `Não precisa de AP3.`;
     } else {
-      txtAP2.innerHTML = `Média parcial de <strong>${media.toFixed(2)}</strong> (abaixo de 6,0). Será necessário realizar a AP3.`;
-    }
-  }
+      txtAP2.innerHTML = `Média parcial de <strong>${media.toFixed(2)}</strong> (abaixo de 6,0). É necessário fazer a AP3.`;
 
-  // 2. CÁLCULO DO CENÁRIO DA AP3 (Média Final >= 5.0)
-  // AP3 substitui a menor AP (AP1 ou AP2)
-  let notaAP2Simulada = (ap2 === null) ? 0 : ap2;
-  let n2Simulada = (ad2 * 0.4) + (notaAP2Simulada * 0.6);
+      // Cálculo exato de AP3 substituindo o pior ciclo
+      let melhor = n1;
+      let adPior = ad2;
+      let substituida = "AP2";
 
-  let melhorCiclo = n1;
-  let adPiorCiclo = ad2;
-  let cicloSubstituido = "AP2";
+      if (n2 > n1) {
+        melhor = n2;
+        adPior = ad1;
+        substituida = "AP1";
+      }
 
-  if (n2Simulada > n1) {
-    melhorCiclo = n2Simulada;
-    adPiorCiclo = ad1;
-    cicloSubstituido = "AP1";
-  }
-
-  // Para média final >= 5.0: (MelhorCiclo + NovoCiclo) / 2 >= 5.0 => NovoCiclo >= 10 - MelhorCiclo
-  // AP3 = (10 - MelhorCiclo - (adPior * 0.4)) / 0.6
-  const ap3Necessaria = (10.0 - melhorCiclo - (adPiorCiclo * 0.4)) / 0.6;
-
-  if (ap2 !== null && ((n1 + n2Simulada) / 2) >= 6.0) {
-    txtAP3.innerHTML = "Não é necessária AP3 (aprovado direto).";
-  } else {
-    if (ap3Necessaria > 10.0) {
-      txtAP3.innerHTML = "Mesmo tirando 10,0 na AP3 não atinge a média mínima de 5,0.";
-    } else {
-      let notaMin = Math.max(0, ap3Necessaria);
-      let obs = (ap2 === null) ? " (estimativa considerando N1 como base)" : ` (substituindo a ${cicloSubstituido})`;
-      txtAP3.innerHTML = `Se for para a AP3, precisará tirar no mínimo <strong>${notaMin.toFixed(1)}</strong> na prova para ser aprovado (média 5,0)${obs}.`;
+      const ap3Precisa = (10.0 - melhor - (adPior * 0.4)) / 0.6;
+      if (ap3Precisa > 10.0) {
+        txtAP3.innerHTML = `Infelizmente, mesmo com 10,0 na AP3 a média não atinge 5,0.`;
+      } else {
+        let notaMin = Math.max(0, ap3Precisa);
+        txtAP3.innerHTML = `A AP3 vai substituir a sua <strong>${substituida}</strong>.<br>Nota mínima necessária na prova da AP3: <span class="destaque-nota">${notaMin.toFixed(1)}</span>.`;
+      }
     }
   }
 }
