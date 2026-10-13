@@ -19,7 +19,7 @@
       padding: 24px;
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      max-width: 440px;
+      max-width: 450px;
       width: 100%;
     }
     h2 {
@@ -63,6 +63,7 @@
     }
     label {
       font-weight: 500;
+      font-size: 14px;
     }
     input {
       width: 85px;
@@ -73,22 +74,34 @@
       font-size: 15px;
     }
     .result-box {
-      margin-top: 20px;
-      padding: 16px;
+      margin-top: 18px;
+      padding: 14px;
       border-radius: 8px;
       background: #f8fafc;
       border: 1px solid #cbd5e1;
+      font-size: 15px;
     }
-    .status {
-      font-weight: 700;
-      font-size: 16px;
-      text-align: center;
-      margin-top: 12px;
-      line-height: 1.4;
+    /* Estilo das caixas informativas */
+    .info-card {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.5;
     }
-    .aprovado { color: #16a34a; }
-    .recuperacao { color: #ea580c; }
-    .reprovado { color: #dc2626; }
+    .card-ap2 {
+      background: #f0fdf4;
+      border: 1.5px solid #86efac;
+      color: #166534;
+    }
+    .card-ap3 {
+      background: #fff7ed;
+      border: 1.5px solid #fdba74;
+      color: #9a3412;
+    }
+    .info-card strong {
+      font-size: 15px;
+    }
   </style>
 </head>
 <body>
@@ -98,7 +111,7 @@
   <div class="badge">Critério: AD (Peso 4) | AP (Peso 6)</div>
 
   <div class="dica-box">
-    💡 <strong>Dica de digitação rápida:</strong> se digitar <strong>55</strong> vira <strong>5.5</strong>, <strong>70</strong> vira <strong>7.0</strong>. Se digitar <strong>10</strong> conta como a nota máxima <strong>10</strong>!
+    💡 <strong>Digitação rápida:</strong> Se digitar <strong>55</strong> vira <strong>5.5</strong>. Se digitar <strong>10</strong> conta como a nota máxima <strong>10</strong>.
   </div>
 
   <div class="section-title">Primeiro Ciclo (N1)</div>
@@ -117,15 +130,27 @@
     <input type="text" id="ad2" inputmode="decimal" placeholder="0.0" oninput="formatarNota(this)">
   </div>
   <div class="input-group">
-    <label for="ap2">Nota da AP2:</label>
-    <input type="text" id="ap2" inputmode="decimal" placeholder="0.0" oninput="formatarNota(this)">
+    <label for="ap2">Nota da AP2 (deixe vazio se não fez):</label>
+    <input type="text" id="ap2" inputmode="decimal" placeholder="pendente" oninput="formatarNota(this)">
   </div>
 
+  <!-- Resumo das notas -->
   <div class="result-box">
     <div><strong>Nota N1:</strong> <span id="resN1">0.00</span></div>
-    <div><strong>Nota N2:</strong> <span id="resN2">0.00</span></div>
-    <div style="font-size: 16px; margin-top: 6px;"><strong>Média Parcial:</strong> <span id="resMedia">0.00</span></div>
-    <div class="status" id="resStatus">-</div>
+    <div><strong>Nota N2:</strong> <span id="resN2">-</span></div>
+    <div style="margin-top: 5px;"><strong>Média Atual / Parcial:</strong> <span id="resMedia">-</span></div>
+  </div>
+
+  <!-- Caixa 1: Quanto falta na AP2 para aprovação direta (Média >= 6.0) -->
+  <div class="info-card card-ap2" id="boxAP2">
+    <strong>🎯 Meta para AP2 (Aprovação Direta):</strong><br>
+    <span id="txtAP2">Preencha as notas acima para calcular.</span>
+  </div>
+
+  <!-- Caixa 2: Situação para a AP3 (Recuperação - Média final >= 5.0) -->
+  <div class="info-card card-ap3" id="boxAP3">
+    <strong>📋 Cenário de AP3 (Recuperação):</strong><br>
+    <span id="txtAP3">Preencha as notas para simular a AP3.</span>
   </div>
 </div>
 
@@ -133,83 +158,4 @@
 function formatarNota(input) {
   let val = input.value.replace(',', '.').trim();
 
-  // Se digitar apenas números inteiros sem ponto/vírgula
-  if (/^\d+$/.test(val)) {
-    if (val === "10") {
-      // 10 permanece 10
-      input.value = "10";
-    } else if (val === "100") {
-      // Se digitar 100, ajusta para 10
-      input.value = "10";
-    } else if (val.length === 2) {
-      // Qualquer outro número de 2 dígitos vira decimal (ex: 55 -> 5.5, 40 -> 4.0)
-      let num = parseInt(val, 10);
-      let formatado = (num / 10).toFixed(1);
-      input.value = formatado;
-    }
-  }
-
-  // Limite máximo de 10
-  let numVal = parseFloat(input.value);
-  if (numVal > 10) {
-    input.value = "10";
-  }
-
-  calcular();
-}
-
-function obterNota(id) {
-  let val = document.getElementById(id).value.replace(',', '.');
-  let num = parseFloat(val);
-  return isNaN(num) ? 0 : Math.min(10, Math.max(0, num));
-}
-
-function calcular() {
-  const ad1 = obterNota('ad1');
-  const ap1 = obterNota('ap1');
-  const ad2 = obterNota('ad2');
-  const ap2 = obterNota('ap2');
-
-  // Pesos: AD = 4 (0.4) e AP = 6 (0.6)
-  const n1 = (ad1 * 0.4) + (ap1 * 0.6);
-  const n2 = (ad2 * 0.4) + (ap2 * 0.6);
-  const media = (n1 + n2) / 2;
-
-  document.getElementById('resN1').innerText = n1.toFixed(2);
-  document.getElementById('resN2').innerText = n2.toFixed(2);
-  document.getElementById('resMedia').innerText = media.toFixed(2);
-
-  const statusEl = document.getElementById('resStatus');
-
-  if (media >= 6.0) {
-    statusEl.innerHTML = "Aprovado Direto! 🎉";
-    statusEl.className = "status aprovado";
-  } else {
-    let melhorCiclo = n1;
-    let adPiorCiclo = ad2;
-    let cicloSubstituido = "AP2";
-
-    if (n2 > n1) {
-      melhorCiclo = n2;
-      adPiorCiclo = ad1;
-      cicloSubstituido = "AP1";
-    }
-
-    const metaNovoCiclo = 10 - melhorCiclo;
-    const ap3Necessaria = (metaNovoCiclo - (adPiorCiclo * 0.4)) / 0.6;
-
-    if (ap3Necessaria > 10.0) {
-      statusEl.innerHTML = "Média insuficiente para recuperação (mesmo com 10 na AP3 não atinge média 5,0).";
-      statusEl.className = "status reprovado";
-    } else {
-      const notaFinalNecessaria = Math.max(0, ap3Necessaria);
-      statusEl.innerHTML = `Em recuperação (AP3 substitui ${cicloSubstituido})<br>Nota mínima necessária na prova da AP3: <strong>${notaFinalNecessaria.toFixed(1)}</strong>`;
-      statusEl.className = "status recuperacao";
-    }
-  }
-}
-calcular();
-</script>
-
-</body>
-</html>
+  if
