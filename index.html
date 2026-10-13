@@ -89,22 +89,22 @@
 
   <div class="section-title">Primeiro Ciclo (N1)</div>
   <div class="input-group">
-    <label for="ad1">Nota da AD1:</label>
-    <input type="number" id="ad1" min="0" max="10" step="0.1" value="0" oninput="calcular()">
+    <label for="ad1">Nota da AD1 (0 a 10):</label>
+    <input type="number" id="ad1" min="0" max="10" step="0.1" value="0" oninput="validarECalcular(this)">
   </div>
   <div class="input-group">
-    <label for="ap1">Nota da AP1:</label>
-    <input type="number" id="ap1" min="0" max="10" step="0.1" value="0" oninput="calcular()">
+    <label for="ap1">Nota da AP1 (0 a 10):</label>
+    <input type="number" id="ap1" min="0" max="10" step="0.1" value="0" oninput="validarECalcular(this)">
   </div>
 
   <div class="section-title">Segundo Ciclo (N2)</div>
   <div class="input-group">
-    <label for="ad2">Nota da AD2:</label>
-    <input type="number" id="ad2" min="0" max="10" step="0.1" value="0" oninput="calcular()">
+    <label for="ad2">Nota da AD2 (0 a 10):</label>
+    <input type="number" id="ad2" min="0" max="10" step="0.1" value="0" oninput="validarECalcular(this)">
   </div>
   <div class="input-group">
-    <label for="ap2">Nota da AP2:</label>
-    <input type="number" id="ap2" min="0" max="10" step="0.1" value="0" oninput="calcular()">
+    <label for="ap2">Nota da AP2 (0 a 10):</label>
+    <input type="number" id="ap2" min="0" max="10" step="0.1" value="0" oninput="validarECalcular(this)">
   </div>
 
   <div class="result-box">
@@ -116,6 +116,19 @@
 </div>
 
 <script>
+function validarECalcular(input) {
+  let val = parseFloat(input.value);
+
+  // Limita estritamente entre 0 e 10
+  if (val > 10) {
+    input.value = 10;
+  } else if (val < 0) {
+    input.value = 0;
+  }
+
+  calcular();
+}
+
 function calcular() {
   const ad1 = parseFloat(document.getElementById('ad1').value) || 0;
   const ap1 = parseFloat(document.getElementById('ap1').value) || 0;
@@ -148,14 +161,11 @@ function calcular() {
       cicloSubstituido = "AP1";
     }
 
-    // Para a média final ser >= 5.0: (MelhorCiclo + NovoCiclo) / 2 >= 5.0 -> NovoCiclo >= 10 - MelhorCiclo
-    // Como NovoCiclo = (adPior * 0.4) + (AP3 * 0.6):
-    // AP3 = (10 - MelhorCiclo - (adPior * 0.4)) / 0.6
     const metaNovoCiclo = 10 - melhorCiclo;
     const ap3Necessaria = (metaNovoCiclo - (adPiorCiclo * 0.4)) / 0.6;
 
     if (ap3Necessaria > 10.0) {
-      statusEl.innerHTML = `Média insuficiente para recuperação (Mesmo com 10 na AP3 a média não atinge 5,0).`;
+      statusEl.innerHTML = "Média insuficiente para recuperação (mesmo com 10 na AP3 não atinge média 5,0).";
       statusEl.className = "status reprovado";
     } else {
       const notaFinalNecessaria = Math.max(0, ap3Necessaria);
